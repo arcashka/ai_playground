@@ -1,20 +1,20 @@
 use crate::linear_regression;
 use crate::training_data;
 
-pub struct BatchGradientDescent {
+pub struct StochasticGradientDescent {
     theta: Vec<f64>,
     learning_rate: f64,
     eps: f64,
     max_iteration_count: i32,
 }
 
-impl BatchGradientDescent {
+impl StochasticGradientDescent {
     pub fn new(
         learning_rate: Option<f64>,
         eps: Option<f64>,
         max_iteration_count: Option<i32>,
     ) -> Self {
-        BatchGradientDescent {
+        StochasticGradientDescent {
             theta: Vec::new(),
             learning_rate: learning_rate.unwrap_or(0.001),
             eps: eps.unwrap_or(0.00001),
@@ -23,7 +23,7 @@ impl BatchGradientDescent {
     }
 }
 
-impl linear_regression::LinearRegressionModel for BatchGradientDescent {
+impl linear_regression::LinearRegressionModel for StochasticGradientDescent {
     fn fit(
         &mut self,
         theta: Option<&[f64]>,
@@ -41,24 +41,17 @@ impl linear_regression::LinearRegressionModel for BatchGradientDescent {
         let mut i = 0;
         let mut previous_cost = 0.0;
         loop {
-            let mut gradients: Vec<f64> = vec![0.0; training_data.x_count];
             let mut cost = 0.0;
             for data in &training_data.examples {
                 let error = self.predict(&data.x) - data.y;
                 cost += error * error;
-                data.x
-                    .iter()
-                    .zip(gradients.iter_mut())
-                    .for_each(|(&x, gradient)| {
-                        *gradient += error * x;
-                    })
+                self.theta
+                    .iter_mut()
+                    .zip(&data.x)
+                    .for_each(|(theta_j, x_j)| {
+                        *theta_j -= self.learning_rate * error * x_j;
+                    });
             }
-            self.theta
-                .iter_mut()
-                .zip(gradients.iter())
-                .for_each(|(theta_j, gradient_j)| {
-                    *theta_j -= self.learning_rate * gradient_j;
-                });
             let cost_change = (previous_cost - cost).abs() / training_data.examples.len() as f64;
             if cost_change < self.eps {
                 break;
@@ -79,3 +72,4 @@ impl linear_regression::LinearRegressionModel for BatchGradientDescent {
         x.iter().zip(self.theta.iter()).map(|(&a, &b)| a * b).sum()
     }
 }
+

@@ -6,7 +6,6 @@ pub struct FittingInfo<'a> {
 }
 
 pub trait LinearRegressionModel {
-    fn new(learning_rate: Option<f64>, eps: Option<f64>, max_iteration_count: Option<i32>) -> Self;
     fn fit(
         &mut self,
         theta: Option<&[f64]>,
