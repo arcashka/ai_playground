@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 csv = "1.2"
+nalgebra = "*"
+num = "*"

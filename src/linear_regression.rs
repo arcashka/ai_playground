@@ -1,15 +1,22 @@
 use crate::training_data::TrainingData;
 
-pub struct FittingInfo<'a> {
-    pub theta: &'a [f64],
-    pub iteration_count: i32,
+pub struct FittingInfo<'a, T: nalgebra::RealField + num::NumCast> {
+    pub theta: &'a nalgebra::DVector<T>,
+    pub iteration_count: usize,
 }
 
-pub trait LinearRegressionModel {
+pub trait LinearRegressionModel<T: nalgebra::RealField + num::NumCast> {
     fn fit(
         &mut self,
-        theta: Option<&[f64]>,
-        training_data: &TrainingData,
-    ) -> Result<FittingInfo, &'static str>;
-    fn predict(&self, x: &[f64]) -> f64;
+        theta: Option<nalgebra::DVector<T>>,
+        training_data: &TrainingData<T>,
+    ) -> Result<FittingInfo<T>, &'static str>;
+    fn predict(
+        &self,
+        vec: &nalgebra::RowVector<
+            T,
+            nalgebra::Dyn,
+            nalgebra::ViewStorage<T, nalgebra::U1, nalgebra::Dyn, nalgebra::U1, nalgebra::Dyn>,
+        >,
+    ) -> T;
 }
