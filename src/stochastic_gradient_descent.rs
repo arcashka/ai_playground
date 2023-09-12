@@ -1,11 +1,9 @@
+use crate::base_gradient_descent;
 use crate::linear_regression;
 use crate::training_data;
 
 pub struct StochasticGradientDescent<T: nalgebra::RealField> {
-    theta: nalgebra::DVector<T>,
-    learning_rate: T,
-    eps: T,
-    max_iteration_count: usize,
+    base: base_gradient_descent::BaseGradientDescent<T>,
 }
 
 impl<T: nalgebra::RealField + num::NumCast + num::Float> StochasticGradientDescent<T> {
@@ -13,15 +11,13 @@ impl<T: nalgebra::RealField + num::NumCast + num::Float> StochasticGradientDesce
         learning_rate: Option<T>,
         eps: Option<T>,
         max_iteration_count: Option<usize>,
-    ) -> Option<Self> {
-        let lr = num::cast::<f64, T>(0.001).unwrap();
-        let epsilon = num::cast::<f64, T>(0.00001).unwrap();
-        let zero = num::cast::<f64, T>(0.0).unwrap();
-        Some(StochasticGradientDescent {
-            theta: nalgebra::DVector::from_element(0, zero),
-            learning_rate: learning_rate.unwrap_or(lr),
-            eps: eps.unwrap_or(epsilon),
-            max_iteration_count: max_iteration_count.unwrap_or(10000),
+    ) -> Result<Self, &'static str> {
+        Ok(Self {
+            base: base_gradient_descent::BaseGradientDescent::new(
+                learning_rate,
+                eps,
+                max_iteration_count,
+            )?,
         })
     }
 }
@@ -37,8 +33,8 @@ where
     ) -> Result<linear_regression::FittingInfo<T>, &'static str> {
         let n = training_data.x.ncols();
         let m = training_data.x.nrows();
-        let zero = num::cast::<f64, T>(0.0).unwrap();
-        self.theta = match theta {
+        let zero = num::cast::<f64, T>(0.0).ok_or("failed to cast to T")?;
+        self.base.theta = match theta {
             Some(t) => {
                 if t.len() != n {
                     return Err("Theta dimensions are not the same as training data");
@@ -52,25 +48,26 @@ where
         loop {
             let mut cost = zero;
             for i in 0..m {
-                let error = self.predict(&training_data.x.row(i)) - training_data.y[i];
+                let error = self.base.predict(&training_data.x.row(i)) - training_data.y[i];
                 cost += error * error;
                 for j in 0..n {
-                    self.theta[j] -= self.learning_rate * error * training_data.x.row(i)[j];
+                    self.base.theta[j] -=
+                        self.base.learning_rate * error * training_data.x.row(i)[j];
                 }
             }
             let cost_change = num::Float::abs(previous_cost - cost);
-            let cost_change = cost_change / num::cast(m).unwrap();
-            if cost_change < self.eps {
+            let cost_change = cost_change / num::cast(m).ok_or("Failed to cast to T")?;
+            if cost_change < self.base.eps {
                 break;
             }
             previous_cost = cost;
-            if iteration_count >= self.max_iteration_count {
+            if iteration_count >= self.base.max_iteration_count {
                 break;
             }
             iteration_count += 1;
         }
         Ok(linear_regression::FittingInfo {
-            theta: &self.theta,
+            theta: &self.base.theta,
             iteration_count,
         })
     }
@@ -83,6 +80,6 @@ where
             nalgebra::ViewStorage<T, nalgebra::U1, nalgebra::Dyn, nalgebra::U1, nalgebra::Dyn>,
         >,
     ) -> T {
-        (x * &self.theta).x
+        self.base.predict(x)
     }
 }

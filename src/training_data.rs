@@ -23,19 +23,25 @@ where
 
     let mut y_values = Vec::<T>::new();
     let mut x_values = Vec::<T>::new();
-    let one: T = num::cast(1.0).unwrap();
+    let one: T = num::cast(1.0).ok_or("failed cast to T")?;
     for record in reader.records() {
         let record = record?;
         let n = record.len();
-        std::iter::once(one)
-            .chain(
-                record
-                    .iter()
-                    .take(n - 1)
-                    .map(|x_record| x_record.parse::<T>().unwrap_or_default()),
-            )
+        std::iter::once(Ok(one))
+            .chain(record.iter().take(n - 1).map(|x_record| {
+                x_record
+                    .parse::<T>()
+                    .map_err(|e| format!("Failed to parse x_record: {:?}", e))
+            }))
+            .collect::<Result<Vec<_>, String>>()?
+            .into_iter()
             .for_each(|e| x_values.push(e));
-        y_values.push(record.get(n - 1).unwrap().parse::<T>().unwrap());
+        record
+            .get(n - 1)
+            .ok_or("Failed to get y record")?
+            .parse::<T>()
+            .map_err(|e| format!("Failed to parse y record: {:?}", e))
+            .map(|y| y_values.push(y))?;
         number_rows += 1;
         number_cols = n;
     }
