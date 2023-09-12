@@ -1,12 +1,13 @@
 use crate::base_gradient_descent;
 use crate::linear_regression;
+use crate::linear_regression::RealNumber;
 use crate::training_data;
 
-pub struct StochasticGradientDescent<T: nalgebra::RealField> {
+pub struct StochasticGradientDescent<T: RealNumber> {
     base: base_gradient_descent::BaseGradientDescent<T>,
 }
 
-impl<T: nalgebra::RealField + num::NumCast + num::Float> StochasticGradientDescent<T> {
+impl<T: RealNumber> StochasticGradientDescent<T> {
     pub fn new(
         learning_rate: Option<T>,
         eps: Option<T>,
@@ -24,7 +25,7 @@ impl<T: nalgebra::RealField + num::NumCast + num::Float> StochasticGradientDesce
 
 impl<T> linear_regression::LinearRegressionModel<T> for StochasticGradientDescent<T>
 where
-    T: nalgebra::RealField + std::iter::Sum + num::Float + Copy,
+    T: RealNumber,
 {
     fn fit(
         &mut self,

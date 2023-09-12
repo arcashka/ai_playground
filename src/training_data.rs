@@ -4,6 +4,8 @@ use std::fs::File;
 
 use nalgebra::{DMatrix, DVector};
 
+use crate::linear_regression::RealNumber;
+
 pub struct TrainingData<T> {
     pub x: DMatrix<T>,
     pub y: DVector<T>,
@@ -11,7 +13,7 @@ pub struct TrainingData<T> {
 
 pub fn read_data<T>(file: &str) -> Result<TrainingData<T>, Box<dyn Error>>
 where
-    T: nalgebra::RealField + num::NumCast + std::str::FromStr + std::default::Default + Copy,
+    T: RealNumber,
     <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
     let file = File::open(file)?;

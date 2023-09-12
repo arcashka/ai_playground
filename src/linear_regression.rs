@@ -1,11 +1,14 @@
 use crate::training_data::TrainingData;
 
-pub struct FittingInfo<'a, T: nalgebra::RealField + num::NumCast> {
+pub trait RealNumber: nalgebra::RealField + num::Float + std::str::FromStr {}
+impl<T: nalgebra::RealField + num::Float + std::str::FromStr> RealNumber for T {}
+
+pub struct FittingInfo<'a, T: RealNumber> {
     pub theta: &'a nalgebra::DVector<T>,
     pub iteration_count: usize,
 }
 
-pub trait LinearRegressionModel<T: nalgebra::RealField + num::NumCast> {
+pub trait LinearRegressionModel<T: RealNumber> {
     fn fit(
         &mut self,
         theta: Option<nalgebra::DVector<T>>,

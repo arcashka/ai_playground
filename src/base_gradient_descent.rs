@@ -1,11 +1,13 @@
-pub struct BaseGradientDescent<T: nalgebra::RealField> {
+use crate::linear_regression::RealNumber;
+
+pub struct BaseGradientDescent<T: RealNumber> {
     pub theta: nalgebra::DVector<T>,
     pub learning_rate: T,
     pub eps: T,
     pub max_iteration_count: usize,
 }
 
-impl<T: nalgebra::RealField + num::NumCast + num::Float> BaseGradientDescent<T> {
+impl<T: RealNumber> BaseGradientDescent<T> {
     pub fn new(
         learning_rate: Option<T>,
         eps: Option<T>,
