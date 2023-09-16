@@ -1,54 +1,62 @@
 use csv::Reader;
-use std::error::Error;
 use std::fs::File;
 
-use nalgebra::{DMatrix, DVector};
+use ndarray::prelude::*;
 
 use crate::linear_regression::RealNumber;
 
 pub struct TrainingData<T> {
-    pub x: DMatrix<T>,
-    pub y: DVector<T>,
+    pub x: Array2<T>,
+    pub y: Array1<T>,
 }
 
-pub fn read_data<T>(file: &str) -> Result<TrainingData<T>, Box<dyn Error>>
+#[derive(Debug)]
+pub enum TrainingDataError {
+    TypeError,
+    CantOpenFileError,
+    InvalidFileFormatError,
+}
+
+pub fn read_data<T>(file: &str) -> Result<TrainingData<T>, TrainingDataError>
 where
     T: RealNumber,
     <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
-    let file = File::open(file)?;
+    let file = File::open(file).map_err(|_| TrainingDataError::CantOpenFileError)?;
 
     let mut reader = Reader::from_reader(file);
 
-    let mut number_rows: usize = 0;
-    let mut number_cols: usize = 0;
+    let mut y_values: Vec<T> = Vec::new();
+    let mut x: Option<Array2<T>> = None;
 
-    let mut y_values = Vec::<T>::new();
-    let mut x_values = Vec::<T>::new();
-    let one: T = num::cast(1.0).ok_or("failed cast to T")?;
+    let one: T = num::cast(1.0).ok_or(TrainingDataError::TypeError)?;
     for record in reader.records() {
-        let record = record?;
+        let record = record.map_err(|_| TrainingDataError::InvalidFileFormatError)?;
         let n = record.len();
-        std::iter::once(Ok(one))
-            .chain(record.iter().take(n - 1).map(|x_record| {
+        let row: Result<Vec<_>, _> = std::iter::once(Ok(one))
+            .chain(record.iter().take(n).map(|x_record| {
                 x_record
                     .parse::<T>()
-                    .map_err(|e| format!("Failed to parse x_record: {:?}", e))
+                    .map_err(|_| TrainingDataError::InvalidFileFormatError)
             }))
-            .collect::<Result<Vec<_>, String>>()?
-            .into_iter()
-            .for_each(|e| x_values.push(e));
-        record
-            .get(n - 1)
-            .ok_or("Failed to get y record")?
-            .parse::<T>()
-            .map_err(|e| format!("Failed to parse y record: {:?}", e))
-            .map(|y| y_values.push(y))?;
-        number_rows += 1;
-        number_cols = n;
+            .collect();
+        let mut row = row?;
+        let y = row.pop().ok_or(TrainingDataError::InvalidFileFormatError)?;
+        match x.as_mut() {
+            Some(x) => x
+                .push_row(Array1::from_vec(row).view())
+                .map_err(|_| TrainingDataError::InvalidFileFormatError)?,
+            None => {
+                x = Some(
+                    Array2::from_shape_vec((1, row.len()), row)
+                        .map_err(|_| TrainingDataError::InvalidFileFormatError)?,
+                )
+            }
+        };
+        y_values.push(y);
     }
     Ok(TrainingData {
-        x: DMatrix::from_row_slice(number_rows, number_cols, &x_values),
-        y: DVector::from_vec(y_values),
+        x: x.unwrap(),
+        y: Array1::from_vec(y_values),
     })
 }
