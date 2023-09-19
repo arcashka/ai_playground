@@ -5,7 +5,7 @@ mod linear_regression;
 mod stochastic_gradient_descent;
 mod training_data;
 
-use linear_regression::{LinearRegressionError, LinearRegressionModel, RealNumber};
+use linear_regression::{LinearRegressionError, LinearRegressionModel};
 use training_data::{TrainingData, TrainingDataError};
 
 use std::convert::From;
@@ -28,7 +28,7 @@ impl From<TrainingDataError> for MainError {
     }
 }
 
-fn run<T: RealNumber>(
+fn run<T: linear_regression::Float>(
     training_data: &TrainingData<T>,
     model: &mut dyn LinearRegressionModel<T>,
 ) -> Result<(), LinearRegressionError> {

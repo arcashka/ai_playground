@@ -1,13 +1,14 @@
-use crate::linear_regression::{LinearRegressionError, RealNumber};
+use crate::linear_regression;
+use crate::linear_regression::LinearRegressionError;
 
-pub struct BaseGradientDescent<T: RealNumber> {
+pub struct BaseGradientDescent<T: linear_regression::Float> {
     pub theta: Option<ndarray::Array1<T>>,
     pub learning_rate: T,
     pub eps: T,
     pub max_iteration_count: usize,
 }
 
-impl<T: RealNumber> BaseGradientDescent<T> {
+impl<T: linear_regression::Float> BaseGradientDescent<T> {
     pub fn new(
         learning_rate: Option<T>,
         eps: Option<T>,

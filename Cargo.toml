@@ -7,6 +7,5 @@ edition = "2021"
 
 [dependencies]
 csv = "1.2"
-nalgebra = "*"
 ndarray = { version = "0.15", features = ["rayon"] }
 num = "*"

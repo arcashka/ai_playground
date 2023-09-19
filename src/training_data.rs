@@ -3,7 +3,7 @@ use std::fs::File;
 
 use ndarray::prelude::*;
 
-use crate::linear_regression::RealNumber;
+use crate::linear_regression::Float;
 
 pub struct TrainingData<T> {
     pub x: Array2<T>,
@@ -19,7 +19,7 @@ pub enum TrainingDataError {
 
 pub fn read_data<T>(file: &str) -> Result<TrainingData<T>, TrainingDataError>
 where
-    T: RealNumber,
+    T: Float,
     <T as std::str::FromStr>::Err: std::fmt::Debug,
 {
     let file = File::open(file).map_err(|_| TrainingDataError::CantOpenFileError)?;
