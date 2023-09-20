@@ -34,7 +34,6 @@ where
     ) -> Result<linear_regression::FittingInfo<T>, LinearRegressionError> {
         let m = training_data.x.nrows();
         let n = training_data.x.ncols();
-        let zero = num::cast::<f64, T>(0.0).ok_or(LinearRegressionError::TypeError)?;
         self.base.theta = match theta {
             Some(t) => {
                 if t.len() != n {
@@ -50,9 +49,9 @@ where
             .as_mut()
             .ok_or(LinearRegressionError::InvalidTheta)?;
         let mut iteration_count = 0;
-        let mut previous_cost = zero;
+        let mut previous_cost = T::zero();
         loop {
-            let mut cost = zero;
+            let mut cost = T::zero();
             for i in 0..m {
                 let error = training_data.x.row(i).dot(theta_ref) - training_data.y[i];
                 cost += error * error;

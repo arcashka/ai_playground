@@ -12,7 +12,6 @@ pub struct TrainingData<T> {
 
 #[derive(Debug)]
 pub enum TrainingDataError {
-    TypeError,
     CantOpenFileError,
     InvalidFileFormatError,
 }
@@ -29,11 +28,10 @@ where
     let mut y_values: Vec<T> = Vec::new();
     let mut x: Option<Array2<T>> = None;
 
-    let one: T = num::cast(1.0).ok_or(TrainingDataError::TypeError)?;
     for record in reader.records() {
         let record = record.map_err(|_| TrainingDataError::InvalidFileFormatError)?;
         let n = record.len();
-        let row: Result<Vec<_>, _> = std::iter::once(Ok(one))
+        let row: Result<Vec<_>, _> = std::iter::once(Ok(T::one()))
             .chain(record.iter().take(n).map(|x_record| {
                 x_record
                     .parse::<T>()
