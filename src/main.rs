@@ -1,7 +1,7 @@
-mod base_gradient_descent;
 mod batch_gradient_descent;
 mod linear_regression;
 mod normal_equation;
+mod parametric_gradient_descent;
 mod stochastic_gradient_descent;
 mod training_data;
 

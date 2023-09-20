@@ -1,14 +1,14 @@
 use crate::linear_regression;
 use crate::linear_regression::LinearRegressionError;
 
-pub struct BaseGradientDescent<T: linear_regression::Float> {
+pub struct ParametricGradientDescent<T: linear_regression::Float> {
     pub theta: Option<ndarray::Array1<T>>,
     pub learning_rate: T,
     pub eps: T,
     pub max_iteration_count: usize,
 }
 
-impl<T: linear_regression::Float> BaseGradientDescent<T> {
+impl<T: linear_regression::Float> ParametricGradientDescent<T> {
     pub fn new(
         learning_rate: Option<T>,
         eps: Option<T>,
@@ -16,7 +16,7 @@ impl<T: linear_regression::Float> BaseGradientDescent<T> {
     ) -> Result<Self, LinearRegressionError> {
         let lr = num::cast::<f64, T>(0.001).ok_or(LinearRegressionError::TypeError)?;
         let epsilon = num::cast::<f64, T>(0.00001).ok_or(LinearRegressionError::TypeError)?;
-        Ok(BaseGradientDescent {
+        Ok(ParametricGradientDescent {
             theta: None,
             learning_rate: learning_rate.unwrap_or(lr),
             eps: eps.unwrap_or(epsilon),

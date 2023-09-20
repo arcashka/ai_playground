@@ -1,10 +1,10 @@
-use crate::base_gradient_descent;
 use crate::linear_regression;
 use crate::linear_regression::LinearRegressionError;
+use crate::parametric_gradient_descent;
 use crate::training_data;
 
 pub struct StochasticGradientDescent<T: linear_regression::Float> {
-    base: base_gradient_descent::BaseGradientDescent<T>,
+    base: parametric_gradient_descent::ParametricGradientDescent<T>,
 }
 
 impl<T: linear_regression::Float> StochasticGradientDescent<T> {
@@ -14,7 +14,7 @@ impl<T: linear_regression::Float> StochasticGradientDescent<T> {
         max_iteration_count: Option<usize>,
     ) -> Result<Self, LinearRegressionError> {
         Ok(Self {
-            base: base_gradient_descent::BaseGradientDescent::new(
+            base: parametric_gradient_descent::ParametricGradientDescent::new(
                 learning_rate,
                 eps,
                 max_iteration_count,

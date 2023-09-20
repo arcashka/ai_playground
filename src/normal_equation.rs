@@ -27,6 +27,7 @@ where
         };
         let x = training_data.x.view();
         let x_t = x.t();
+        // θ = (XᵀX)⁻¹Xᵀy
         self.theta = Some(
             x_t.dot(&x)
                 .inv()
