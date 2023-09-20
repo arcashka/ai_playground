@@ -64,7 +64,7 @@ where
             for i in 0..n {
                 theta_ref[i] -= self.base.learning_rate * gradients[i];
             }
-            let cost_change: T = num::Float::abs(previous_cost - cost);
+            let cost_change = num::Float::abs(previous_cost - cost);
             let cost_change = cost_change / num::cast(m).ok_or(LinearRegressionError::TypeError)?;
             if cost_change < self.base.eps {
                 break;

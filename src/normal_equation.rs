@@ -1,91 +1,54 @@
-use crate::linear_regression;
-use crate::linear_regression::RealNumber;
+use ndarray_linalg::Inverse;
+
+use crate::linear_regression::{self, LinearRegressionError};
 use crate::training_data;
 
-pub struct NormalEquation<T: RealNumber> {
-    pub theta: nalgebra::DVector<T>,
+pub struct NormalEquation<T: linear_regression::Float> {
+    pub theta: Option<ndarray::Array1<T>>,
 }
 
-impl<T: RealNumber> NormalEquation<T> {
+impl<T: linear_regression::Float> NormalEquation<T> {
     pub fn new() -> Self {
-        Self {
-            theta: ,
-        }
-    }
-
-    pub fn predict(
-        &self,
-        x: &nalgebra::RowVector<
-            T,
-            nalgebra::Dyn,
-            nalgebra::ViewStorage<T, nalgebra::U1, nalgebra::Dyn, nalgebra::U1, nalgebra::Dyn>,
-        >,
-    ) -> T {
-        (x * &self.theta).x
+        Self { theta: None }
     }
 }
 
-impl<T> linear_regression::LinearRegressionModel<T> for BatchGradientDescent<T>
+impl<T> linear_regression::LinearRegressionModel<T> for NormalEquation<T>
 where
-    T: RealNumber,
+    T: linear_regression::Float,
 {
     fn fit(
         &mut self,
-        theta: Option<nalgebra::DVector<T>>,
+        theta: Option<ndarray::Array1<T>>,
         training_data: &training_data::TrainingData<T>,
-    ) -> Result<linear_regression::FittingInfo<T>, &'static str> {
-        let n = training_data.x.ncols();
-        let m = training_data.x.nrows();
-        let zero = num::cast::<f64, T>(0.0).ok_or("failed to cast to T")?;
-        self.base.theta = match theta {
-            Some(t) => {
-                if t.len() != n {
-                    return Err("Theta dimensions are not the same as training data");
-                }
-                t
-            }
-            None => nalgebra::DVector::<T>::from_element(n, zero),
+    ) -> Result<linear_regression::FittingInfo<T>, LinearRegressionError> {
+        if theta.is_some() {
+            return Err(LinearRegressionError::ProvidedThetaWillNotBeUsed);
         };
-        let mut iteration_count = 0;
-        let mut previous_cost = zero;
-        loop {
-            let mut gradients: Vec<T> = vec![zero; n];
-            let mut cost = zero;
-            for i in 0..m {
-                let error = self.predict(&training_data.x.row(i)) - training_data.y[i];
-                cost += error * error;
-                for j in 0..n {
-                    gradients[j] += error * (*training_data.x.row(i).index(j));
-                }
-            }
-            for i in 0..n {
-                self.base.theta[i] -= self.base.learning_rate * gradients[i];
-            }
-            let cost_change: T = num::Float::abs(previous_cost - cost);
-            let cost_change = cost_change / num::cast(m).ok_or("Failed to cast to T")?;
-            if cost_change < self.base.eps {
-                break;
-            }
-            previous_cost = cost;
-            if iteration_count >= self.base.max_iteration_count {
-                break;
-            }
-            iteration_count += 1;
-        }
+        let x = training_data.x.view();
+        let x_t = x.t();
+        self.theta = Some(
+            x_t.dot(&x)
+                .inv()
+                .map_err(|_| LinearRegressionError::FailedToInvertMatrix)?
+                .dot(&x_t.dot(&training_data.y)),
+        );
+
         Ok(linear_regression::FittingInfo {
-            theta: &self.base.theta,
-            iteration_count,
+            theta: self
+                .theta
+                .as_ref()
+                .ok_or(LinearRegressionError::ThetaIsNotThereYet)?
+                .view(),
+            iteration_count: 1,
         })
     }
 
-    fn predict(
-        &self,
-        x: &nalgebra::RowVector<
-            T,
-            nalgebra::Dyn,
-            nalgebra::ViewStorage<T, nalgebra::U1, nalgebra::Dyn, nalgebra::U1, nalgebra::Dyn>,
-        >,
-    ) -> T {
-        self.base.predict(x)
+    fn predict(&self, x: &ndarray::ArrayView1<T>) -> Result<T, LinearRegressionError> {
+        let theta = self
+            .theta
+            .as_ref()
+            .ok_or(LinearRegressionError::ThetaIsNotThereYet)?;
+        Ok(x.dot(theta))
     }
 }
