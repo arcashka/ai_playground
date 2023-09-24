@@ -1,21 +1,20 @@
-use crate::linear_regression;
 use crate::linear_regression::LinearRegressionError;
 
-pub struct ParametricGradientDescent<T: linear_regression::Float> {
+pub struct ParametricGradientDescent<T> {
     pub theta: Option<ndarray::Array1<T>>,
     pub learning_rate: T,
     pub eps: T,
     pub max_iteration_count: usize,
 }
 
-impl<T: linear_regression::Float> ParametricGradientDescent<T> {
+impl<T: num_traits::Float> ParametricGradientDescent<T> {
     pub fn new(
         learning_rate: Option<T>,
         eps: Option<T>,
         max_iteration_count: Option<usize>,
     ) -> Result<Self, LinearRegressionError> {
-        let lr = num::cast::<f64, T>(0.001).ok_or(LinearRegressionError::TypeError)?;
-        let epsilon = num::cast::<f64, T>(0.00001).ok_or(LinearRegressionError::TypeError)?;
+        let lr = num::cast::<f64, T>(0.001).ok_or(LinearRegressionError::FailedCastToT)?;
+        let epsilon = num::cast::<f64, T>(0.00001).ok_or(LinearRegressionError::FailedCastToT)?;
         Ok(ParametricGradientDescent {
             theta: None,
             learning_rate: learning_rate.unwrap_or(lr),
@@ -23,12 +22,14 @@ impl<T: linear_regression::Float> ParametricGradientDescent<T> {
             max_iteration_count: max_iteration_count.unwrap_or(10000),
         })
     }
+}
 
+impl<T: num_traits::Float + 'static> ParametricGradientDescent<T> {
     pub fn predict(&self, x: &ndarray::ArrayView1<T>) -> Result<T, LinearRegressionError> {
         let theta = self
             .theta
             .as_ref()
-            .ok_or(LinearRegressionError::ThetaIsNotThereYet)?;
+            .ok_or(LinearRegressionError::ThetaMissing)?;
         Ok(x.dot(theta))
     }
 }

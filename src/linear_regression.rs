@@ -1,25 +1,21 @@
 use crate::training_data::TrainingData;
-use cauchy::Scalar;
-use ndarray_linalg::Lapack;
 
-pub trait Float: num::Float + Scalar + Lapack + std::str::FromStr {}
-impl<T: num::Float + Scalar + Lapack + std::str::FromStr> Float for T {}
-
-pub struct FittingInfo<'a, T: Float> {
-    pub theta: ndarray::ArrayView1<'a, T>,
-    pub iteration_count: usize,
+pub struct FittingInfo<'a, T> {
+    pub theta: Option<ndarray::ArrayView1<'a, T>>,
+    pub iteration_count: Option<usize>,
 }
 
 #[derive(Debug)]
 pub enum LinearRegressionError {
     InvalidTheta,
-    ThetaIsNotThereYet,
     ProvidedThetaWillNotBeUsed,
     FailedToInvertMatrix,
-    TypeError,
+    ThetaMissing,
+    FailedCastToT,
+    TrainingDataMissing,
 }
 
-pub trait LinearRegressionModel<T: Float> {
+pub trait LinearRegressionModel<T> {
     fn fit(
         &mut self,
         theta: Option<ndarray::Array1<T>>,

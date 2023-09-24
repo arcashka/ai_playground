@@ -3,11 +3,11 @@ use crate::linear_regression::LinearRegressionError;
 use crate::parametric_gradient_descent;
 use crate::training_data;
 
-pub struct StochasticGradientDescent<T: linear_regression::Float> {
+pub struct StochasticGradientDescent<T> {
     base: parametric_gradient_descent::ParametricGradientDescent<T>,
 }
 
-impl<T: linear_regression::Float> StochasticGradientDescent<T> {
+impl<T: num_traits::Float> StochasticGradientDescent<T> {
     pub fn new(
         learning_rate: Option<T>,
         eps: Option<T>,
@@ -25,7 +25,7 @@ impl<T: linear_regression::Float> StochasticGradientDescent<T> {
 
 impl<T> linear_regression::LinearRegressionModel<T> for StochasticGradientDescent<T>
 where
-    T: linear_regression::Float,
+    T: num_traits::Float + num_traits::NumAssignOps + 'static,
 {
     fn fit(
         &mut self,
@@ -60,7 +60,8 @@ where
                 }
             }
             let cost_change = num::Float::abs(previous_cost - cost);
-            let cost_change = cost_change / num::cast(m).ok_or(LinearRegressionError::TypeError)?;
+            let cost_change =
+                cost_change / num::cast(m).ok_or(LinearRegressionError::FailedCastToT)?;
             if cost_change < self.base.eps {
                 break;
             }
@@ -71,8 +72,8 @@ where
             iteration_count += 1;
         }
         Ok(linear_regression::FittingInfo {
-            theta: theta_ref.view(),
-            iteration_count,
+            theta: Some(theta_ref.view()),
+            iteration_count: Some(iteration_count),
         })
     }
 

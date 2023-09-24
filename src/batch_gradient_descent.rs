@@ -1,13 +1,14 @@
 use crate::linear_regression;
 use crate::linear_regression::LinearRegressionError;
+use crate::lms;
 use crate::parametric_gradient_descent;
 use crate::training_data;
 
-pub struct BatchGradientDescent<T: linear_regression::Float> {
+pub struct BatchGradientDescent<T> {
     base: parametric_gradient_descent::ParametricGradientDescent<T>,
 }
 
-impl<T: linear_regression::Float> BatchGradientDescent<T> {
+impl<T: num_traits::Float> BatchGradientDescent<T> {
     pub fn new(
         learning_rate: Option<T>,
         eps: Option<T>,
@@ -23,58 +24,40 @@ impl<T: linear_regression::Float> BatchGradientDescent<T> {
     }
 }
 
+impl From<lms::LMSError> for LinearRegressionError {
+    fn from(error: lms::LMSError) -> Self {
+        match error {
+            lms::LMSError::InvalidTheta => LinearRegressionError::InvalidTheta,
+            lms::LMSError::FailedCastToT => LinearRegressionError::FailedCastToT,
+        }
+    }
+}
+
 impl<T> linear_regression::LinearRegressionModel<T> for BatchGradientDescent<T>
 where
-    T: linear_regression::Float,
+    T: num_traits::Float + num_traits::NumAssignOps + 'static,
 {
     fn fit(
         &mut self,
         theta: Option<ndarray::Array1<T>>,
         training_data: &training_data::TrainingData<T>,
     ) -> Result<linear_regression::FittingInfo<T>, LinearRegressionError> {
-        let m = training_data.x.nrows();
-        let n = training_data.x.ncols();
-        self.base.theta = match theta {
-            Some(t) => {
-                if t.len() != n {
-                    return Err(LinearRegressionError::InvalidTheta);
-                }
-                Some(t)
-            }
-            None => Some(ndarray::Array1::<T>::zeros(n)),
+        let settings = lms::LMSSettings {
+            max_iteration_count: Some(self.base.max_iteration_count),
+            learning_rate: Some(self.base.learning_rate),
+            eps: Some(self.base.eps),
+            starting_theta: theta,
         };
-        let theta_ref = self
-            .base
-            .theta
-            .as_mut()
-            .ok_or(LinearRegressionError::InvalidTheta)?;
-        let mut iteration_count = 0;
-        let mut previous_cost = T::zero();
-        loop {
-            let mut gradients = ndarray::Array1::<T>::zeros(n);
-            let mut cost = T::zero();
-            for i in 0..m {
-                let error = training_data.x.row(i).dot(theta_ref) - training_data.y[i];
-                cost += error * error;
-                gradients.scaled_add(error, &training_data.x.row(i));
-            }
-            for i in 0..n {
-                theta_ref[i] -= self.base.learning_rate * gradients[i];
-            }
-            let cost_change = num::Float::abs(previous_cost - cost);
-            let cost_change = cost_change / num::cast(m).ok_or(LinearRegressionError::TypeError)?;
-            if cost_change < self.base.eps {
-                break;
-            }
-            previous_cost = cost;
-            if iteration_count >= self.base.max_iteration_count {
-                break;
-            }
-            iteration_count += 1;
-        }
+        let lms_result = lms::lms_solve(
+            training_data.x.view(),
+            training_data.y.view(),
+            Some(settings),
+        )?;
+        self.base.theta = Some(lms_result.theta);
+        // TODO: result fields shouldnt be Option
         Ok(linear_regression::FittingInfo {
-            theta: theta_ref.view(),
-            iteration_count,
+            theta: Some(self.base.theta.as_ref().expect("just put it there").view()),
+            iteration_count: Some(lms_result.iteration_count),
         })
     }
 

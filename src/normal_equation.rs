@@ -3,11 +3,11 @@ use ndarray_linalg::Inverse;
 use crate::linear_regression::{self, LinearRegressionError};
 use crate::training_data;
 
-pub struct NormalEquation<T: linear_regression::Float> {
+pub struct NormalEquation<T> {
     pub theta: Option<ndarray::Array1<T>>,
 }
 
-impl<T: linear_regression::Float> NormalEquation<T> {
+impl<T> NormalEquation<T> {
     pub fn new() -> Self {
         Self { theta: None }
     }
@@ -15,7 +15,7 @@ impl<T: linear_regression::Float> NormalEquation<T> {
 
 impl<T> linear_regression::LinearRegressionModel<T> for NormalEquation<T>
 where
-    T: linear_regression::Float,
+    T: num_traits::Float + ndarray_linalg::Lapack,
 {
     fn fit(
         &mut self,
@@ -36,12 +36,13 @@ where
         );
 
         Ok(linear_regression::FittingInfo {
-            theta: self
-                .theta
-                .as_ref()
-                .ok_or(LinearRegressionError::ThetaIsNotThereYet)?
-                .view(),
-            iteration_count: 1,
+            theta: Some(
+                self.theta
+                    .as_ref()
+                    .ok_or(LinearRegressionError::ThetaMissing)?
+                    .view(),
+            ),
+            iteration_count: None,
         })
     }
 
@@ -49,7 +50,7 @@ where
         let theta = self
             .theta
             .as_ref()
-            .ok_or(LinearRegressionError::ThetaIsNotThereYet)?;
+            .ok_or(LinearRegressionError::ThetaMissing)?;
         Ok(x.dot(theta))
     }
 }
