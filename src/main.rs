@@ -1,14 +1,16 @@
-mod batch_gradient_descent;
+mod fittable_model;
+mod gradient_descent;
 mod linear_regression;
 mod lms;
-mod locally_weighted_gradient_descent;
+//mod locally_weighted_gradient_descent;
 mod normal_equation;
-mod parametric_gradient_descent;
-mod stochastic_gradient_descent;
+mod parametric_algorithm;
 mod training_data;
 
-use linear_regression::{LinearRegressionError, LinearRegressionModel};
-use training_data::{TrainingData, TrainingDataError};
+use fittable_model::FittableModel;
+use linear_regression::LinearRegressionError;
+use parametric_algorithm::ParametricAlgorithm;
+use training_data::TrainingDataError;
 
 use std::convert::From;
 
@@ -30,46 +32,48 @@ impl From<TrainingDataError> for MainError {
     }
 }
 
-fn run<T: num_traits::Float + std::fmt::Debug>(
-    training_data: &TrainingData<T>,
-    model: &mut dyn LinearRegressionModel<T>,
+fn print<T: num_traits::Float + std::fmt::Debug>(
     name: &str,
-) -> Result<(), LinearRegressionError> {
-    let fitting_info = model.fit(None, &training_data)?;
-    println!(
-        "{}\nIterations: {:?}\ntheta: {:?}\n",
-        name, fitting_info.iteration_count, fitting_info.theta
-    );
-    Ok(())
+    theta: ndarray::ArrayView1<T>,
+    fitting_info: Option<fittable_model::FittingInfo>,
+) {
+    println!("{}", name);
+    match fitting_info {
+        Some(info) => {
+            println!("{:?}", info);
+        }
+        None => (),
+    };
+    println!("{:?}\n", theta);
 }
 
 fn main() -> Result<(), MainError> {
     let training_data = training_data::read_data::<f64>("resources/3.csv")?;
-    let mut batch_gradient_descent = batch_gradient_descent::BatchGradientDescent::<f64>::new(
-        Some(0.001),
-        Some(0.00001),
-        Some(10000),
-    )?;
-    run(
+    let fitting_settings = fittable_model::FittingSettings {
+        max_iteration_count: 10000,
+        learning_rate: 0.001,
+        eps: 0.00001,
+        starting_theta: ndarray::Array1::<f64>::zeros(training_data.x.ncols()),
+    };
+    let batch_gradient_descent = gradient_descent::GradientDescent::<f64>::fit::<lms::BatchKernel>(
         &training_data,
-        &mut batch_gradient_descent,
+        &fitting_settings,
+    )?;
+    print(
         "batch gradient descent",
-    )?;
-
-    let mut stochastic_gradient_descent = stochastic_gradient_descent::StochasticGradientDescent::<
-        f64,
-    >::new(Some(0.001), Some(0.000001), Some(10000))?;
-    run(
-        &training_data,
-        &mut stochastic_gradient_descent,
+        batch_gradient_descent.theta(),
+        Some(batch_gradient_descent.fitting_info()),
+    );
+    let stochastic_gradient_descent = gradient_descent::GradientDescent::<f64>::fit::<
+        lms::StochasticKernel,
+    >(&training_data, &fitting_settings)?;
+    print(
         "stochastic gradient descent",
-    )?;
+        stochastic_gradient_descent.theta(),
+        Some(stochastic_gradient_descent.fitting_info()),
+    );
 
-    let mut normal_equation_solver = normal_equation::NormalEquation::<f64>::new();
-    run(
-        &training_data,
-        &mut normal_equation_solver,
-        "normal equations",
-    )?;
+    let normal_equation_solver = normal_equation::NormalEquation::<f64>::new(&training_data)?;
+    print("normal equations", normal_equation_solver.theta(), None);
     Ok(())
 }

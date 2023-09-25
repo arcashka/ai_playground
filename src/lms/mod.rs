@@ -1,26 +1,25 @@
+mod batch_kernel;
+mod kernel;
+mod stochastic_kernel;
+
+use crate::lms::kernel::LMSSettingsFilled;
 use ndarray::Array1;
 use ndarray::ArrayView1;
 use ndarray::ArrayView2;
 use num_traits;
 
-#[derive(Debug)]
-pub enum LMSError {
-    InvalidTheta,
-    FailedCastToT,
-}
+pub use crate::lms::batch_kernel::BatchKernel;
+pub use crate::lms::kernel::Kernel;
+pub use crate::lms::stochastic_kernel::StochasticKernel;
+
+pub use crate::lms::kernel::LMSError;
+pub use crate::lms::kernel::LMSResult;
 
 pub struct LMSSettings<T> {
     pub max_iteration_count: Option<usize>,
     pub learning_rate: Option<T>,
     pub eps: Option<T>,
     pub starting_theta: Option<Array1<T>>,
-}
-
-struct LMSSettingsFilled<T> {
-    max_iteration_count: usize,
-    learning_rate: T,
-    eps: T,
-    starting_theta: Array1<T>,
 }
 
 fn fill_missing_settings<T>(
@@ -53,52 +52,15 @@ where
     })
 }
 
-pub struct LMSResult<T> {
-    pub theta: Array1<T>,
-    pub iteration_count: usize,
-}
-
-pub fn lms_solve<'a, T>(
+pub fn lms_solve<'a, T, K>(
     x: ArrayView2<'a, T>,
     y: ArrayView1<'a, T>,
     settings: Option<LMSSettings<T>>,
 ) -> Result<LMSResult<T>, LMSError>
 where
     T: num_traits::Float + num_traits::NumAssignOps + 'static,
+    K: kernel::Kernel<T>,
 {
-    let m = x.nrows();
-    let n = x.ncols();
-
-    let settings = fill_missing_settings(settings, n)?;
-    let mut theta = settings.starting_theta;
-
-    let mut iteration_count = 0;
-    let mut previous_cost = T::zero();
-    loop {
-        let mut gradients = ndarray::Array1::<T>::zeros(n);
-        let mut cost = T::zero();
-        for i in 0..m {
-            let error = x.row(i).dot(&theta) - y[i];
-            cost += error * error;
-            gradients.scaled_add(error, &x.row(i));
-        }
-        for i in 0..n {
-            theta[i] -= settings.learning_rate * gradients[i];
-        }
-        let cost_change = num::Float::abs(previous_cost - cost);
-        let cost_change = cost_change / T::from(m).ok_or(LMSError::FailedCastToT)?;
-        if cost_change < settings.eps {
-            break;
-        }
-        previous_cost = cost;
-        if iteration_count >= settings.max_iteration_count {
-            break;
-        }
-        iteration_count += 1;
-    }
-
-    Ok(LMSResult {
-        theta,
-        iteration_count,
-    })
+    let settings = fill_missing_settings(settings, x.ncols())?;
+    K::compute(x, y, settings)
 }
