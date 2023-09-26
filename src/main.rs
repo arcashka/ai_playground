@@ -2,13 +2,13 @@ mod fittable_model;
 mod gradient_descent;
 mod linear_regression;
 mod lms;
-//mod locally_weighted_gradient_descent;
+mod locally_weighted_gradient_descent;
 mod normal_equation;
 mod parametric_algorithm;
 mod training_data;
 
 use fittable_model::FittableModel;
-use linear_regression::LinearRegressionError;
+use linear_regression::{LinearRegressionError, LinearRegressionModel};
 use parametric_algorithm::ParametricAlgorithm;
 use training_data::TrainingDataError;
 
@@ -75,5 +75,18 @@ fn main() -> Result<(), MainError> {
 
     let normal_equation_solver = normal_equation::NormalEquation::<f64>::new(&training_data)?;
     print("normal equations", normal_equation_solver.theta(), None);
+
+    let locally_weighted_gradient_descent =
+        locally_weighted_gradient_descent::LocallyWeightedLinearRegression::<f64>::new(
+            &training_data,
+            locally_weighted_gradient_descent::Settings {
+                common_settings: fitting_settings,
+                bandwith: 1.0,
+            },
+        );
+    println!(
+        "locally weighted gradient descent\n{:?}\n",
+        locally_weighted_gradient_descent.predict(&training_data.x.row(0))?,
+    );
     Ok(())
 }

@@ -15,10 +15,14 @@ pub enum LMSError {
     FailedCastToT,
 }
 
-pub trait Kernel<T: num_traits::Float + num_traits::NumAssignOps> {
-    fn compute(
+pub trait Kernel<T> {
+    fn compute<F>(
         x: ndarray::ArrayView2<T>,
         y: ndarray::ArrayView1<T>,
         settings: LMSSettingsFilled<T>,
-    ) -> Result<LMSResult<T>, LMSError>;
+        weight_function: F,
+    ) -> Result<LMSResult<T>, LMSError>
+    where
+        T: num_traits::Float + num_traits::NumAssignOps,
+        F: Fn(ndarray::ArrayView1<T>) -> T;
 }

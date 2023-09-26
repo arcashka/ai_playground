@@ -6,11 +6,15 @@ impl<T> Kernel<T> for StochasticKernel
 where
     T: num_traits::Float + num_traits::NumAssignOps + 'static,
 {
-    fn compute(
+    fn compute<F>(
         x: ndarray::ArrayView2<T>,
         y: ndarray::ArrayView1<T>,
         settings: LMSSettingsFilled<T>,
-    ) -> Result<LMSResult<T>, LMSError> {
+        weight_function: F,
+    ) -> Result<LMSResult<T>, LMSError>
+    where
+        F: Fn(ndarray::ArrayView1<T>) -> T,
+    {
         let m = x.nrows();
         let mut iteration_count = 0;
         let mut previous_cost = T::zero();
@@ -18,7 +22,8 @@ where
         loop {
             let mut cost = T::zero();
             for i in 0..m {
-                let error = x.row(i).dot(&theta) - y[i];
+                let weight = weight_function(x.row(i).view());
+                let error = weight * (x.row(i).dot(&theta) - y[i]);
                 cost += error * error;
                 theta.scaled_add((settings.learning_rate * error).neg(), &x.row(i));
             }

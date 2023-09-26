@@ -52,15 +52,17 @@ where
     })
 }
 
-pub fn lms_solve<'a, T, K>(
+pub fn lms_solve<'a, T, K, F>(
     x: ArrayView2<'a, T>,
     y: ArrayView1<'a, T>,
     settings: Option<LMSSettings<T>>,
+    weight_function: F,
 ) -> Result<LMSResult<T>, LMSError>
 where
     T: num_traits::Float + num_traits::NumAssignOps + 'static,
     K: kernel::Kernel<T>,
+    F: Fn(ndarray::ArrayView1<T>) -> T,
 {
     let settings = fill_missing_settings(settings, x.ncols())?;
-    K::compute(x, y, settings)
+    K::compute(x, y, settings, weight_function)
 }

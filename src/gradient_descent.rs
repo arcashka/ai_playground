@@ -53,10 +53,11 @@ where
             eps: Some(settings.eps),
             starting_theta: Some(settings.starting_theta.clone()),
         };
-        let lms_result = lms::lms_solve::<T, K>(
+        let lms_result = lms::lms_solve::<T, K, _>(
             training_data.x.view(),
             training_data.y.view(),
             Some(settings),
+            |_| T::one(),
         )?;
         Ok(Self {
             theta: lms_result.theta,
