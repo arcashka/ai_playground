@@ -1,9 +1,14 @@
 [package]
-name = "gradient_descent"
+name = "ai_playground"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "ai_playground"
+path = "src/main.rs"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 csv = "1.2"
@@ -12,3 +17,21 @@ ndarray-linalg = { version = "*", features = ["openblas-static"] }
 cauchy = "*"
 num = "*"
 num-traits = "*"
+cfg-if = "1"
+winit = "0.28"
+env_logger = "0.10"
+log = "0.4"
+wgpu = "0.17"
+pollster = "0.3"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.6"
+console_log = "1.0"
+wgpu = { version = "0.17", features = ["webgl"]}
+wasm-bindgen = "=0.2.87"
+wasm-bindgen-futures = "0.4.30"
+web-sys = { version = "0.3.53", features = [
+    "Document",
+    "Window",
+    "Element",
+]}
