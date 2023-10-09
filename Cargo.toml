@@ -13,7 +13,6 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 csv = "1.2"
 ndarray = { version = "*", features = ["rayon"] }
-ndarray-linalg = { version = "*", features = ["openblas-static"] }
 cauchy = "*"
 num = "*"
 num-traits = "*"
@@ -23,6 +22,7 @@ env_logger = "0.10"
 log = "0.4"
 wgpu = "0.17"
 pollster = "0.3"
+getrandom = { version = "0.2", features = ["js"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1.6"

@@ -1,3 +1,5 @@
+use crate::array;
+
 #[derive(Debug)]
 pub enum LinearRegressionError {
     FailedCastToT,
@@ -5,5 +7,5 @@ pub enum LinearRegressionError {
 }
 
 pub trait LinearRegressionModel<T> {
-    fn predict(&self, x: &ndarray::ArrayView1<T>) -> Result<T, LinearRegressionError>;
+    fn predict(&self, x: &array::ArrayView1<T>) -> Result<T, LinearRegressionError>;
 }

@@ -1,4 +1,6 @@
+use crate::array;
 use crate::fittable_model;
+use crate::linalg::dot::Dot;
 use crate::linear_regression;
 use crate::linear_regression::LinearRegressionError;
 use crate::lms;
@@ -6,7 +8,7 @@ use crate::parametric_algorithm;
 use crate::training_data;
 
 pub struct GradientDescent<T> {
-    theta: ndarray::Array1<T>,
+    theta: array::Array1<T>,
     iteration_count: usize,
 }
 
@@ -20,25 +22,25 @@ impl From<lms::LMSError> for LinearRegressionError {
 
 impl<T> linear_regression::LinearRegressionModel<T> for GradientDescent<T>
 where
-    T: num_traits::Float + 'static,
+    T: num_traits::Float + std::iter::Sum,
 {
-    fn predict(&self, x: &ndarray::ArrayView1<T>) -> Result<T, LinearRegressionError> {
+    fn predict(&self, x: &array::ArrayView1<T>) -> Result<T, LinearRegressionError> {
         Ok(x.dot(&self.theta))
     }
 }
 
 impl<T> parametric_algorithm::ParametricAlgorithm<T> for GradientDescent<T>
 where
-    T: num_traits::Float + 'static,
+    T: num_traits::Float + std::iter::Sum,
 {
-    fn theta(&self) -> ndarray::ArrayView1<T> {
+    fn theta(&self) -> array::ArrayView1<T> {
         self.theta.view()
     }
 }
 
 impl<T> fittable_model::FittableModel<T> for GradientDescent<T>
 where
-    T: num_traits::Float + num_traits::NumAssignOps + 'static,
+    T: num_traits::Float + num_traits::NumAssignOps + std::iter::Sum,
 {
     fn fit<K>(
         training_data: &training_data::TrainingData<T>,

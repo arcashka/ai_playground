@@ -1,12 +1,12 @@
 use csv::Reader;
 use std::fs::File;
 
-use ndarray::prelude::*;
+use crate::array;
 
 #[derive(Clone)]
 pub struct TrainingData<T> {
-    pub x: Array2<T>,
-    pub y: Array1<T>,
+    pub x: array::Array2<T>,
+    pub y: array::Array1<T>,
 }
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ where
     let mut reader = Reader::from_reader(file);
 
     let mut y_values: Vec<T> = Vec::new();
-    let mut x: Option<Array2<T>> = None;
+    let mut x: Option<array::Array2<T>> = None;
 
     for record in reader.records() {
         let record = record.map_err(|_| TrainingDataError::InvalidFileFormatError)?;
@@ -41,11 +41,11 @@ where
         let y = row.pop().ok_or(TrainingDataError::InvalidFileFormatError)?;
         match x.as_mut() {
             Some(x) => x
-                .push_row(Array1::from_vec(row).view())
+                .push_row(array::Array1::from_vec(row).view())
                 .map_err(|_| TrainingDataError::InvalidFileFormatError)?,
             None => {
                 x = Some(
-                    Array2::from_shape_vec((1, row.len()), row)
+                    array::Array2::from_shape_vec((1, row.len()), row)
                         .map_err(|_| TrainingDataError::InvalidFileFormatError)?,
                 )
             }
@@ -54,6 +54,6 @@ where
     }
     Ok(TrainingData {
         x: x.unwrap(),
-        y: Array1::from_vec(y_values),
+        y: array::Array1::from_vec(y_values),
     })
 }

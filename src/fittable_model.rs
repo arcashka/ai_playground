@@ -1,3 +1,4 @@
+use crate::array;
 use crate::{linear_regression, training_data};
 use crate::{lms, parametric_algorithm};
 
@@ -10,7 +11,7 @@ pub struct FittingSettings<T> {
     pub max_iteration_count: usize,
     pub learning_rate: T,
     pub eps: T,
-    pub starting_theta: ndarray::Array1<T>,
+    pub starting_theta: array::Array1<T>,
 }
 
 pub trait FittableModel<T>: parametric_algorithm::ParametricAlgorithm<T> {
@@ -20,7 +21,7 @@ pub trait FittableModel<T>: parametric_algorithm::ParametricAlgorithm<T> {
     ) -> Result<Self, linear_regression::LinearRegressionError>
     where
         Self: Sized,
-        T: num_traits::Float + num_traits::NumAssignOps + 'static,
+        T: num_traits::Float + num_traits::NumAssignOps,
         K: lms::Kernel<T>;
     fn fitting_info(&self) -> FittingInfo;
 }

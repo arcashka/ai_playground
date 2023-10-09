@@ -1,9 +1,7 @@
-use cauchy::Scalar;
-use ndarray_linalg::Lapack;
-use ndarray_linalg::Norm;
-use std::ops::Sub;
-
+use crate::array;
 use crate::fittable_model;
+use crate::linalg::Arithmetic;
+use crate::linalg::Dot;
 use crate::linear_regression;
 use crate::linear_regression::LinearRegressionError;
 use crate::lms;
@@ -33,9 +31,9 @@ where
 
 impl<T> linear_regression::LinearRegressionModel<T> for LocallyWeightedLinearRegression<T>
 where
-    T: num_traits::Float + num_traits::NumAssignOps + Lapack + num_traits::FloatConst,
+    T: num_traits::Float + num_traits::NumAssignOps + num_traits::FloatConst + std::iter::Sum,
 {
-    fn predict(&self, x_i: &ndarray::ArrayView1<T>) -> Result<T, LinearRegressionError> {
+    fn predict(&self, x_i: &array::ArrayView1<T>) -> Result<T, LinearRegressionError> {
         let settings = lms::LMSSettings {
             max_iteration_count: Some(self.settings.common_settings.max_iteration_count),
             learning_rate: Some(self.settings.common_settings.learning_rate),
@@ -48,13 +46,11 @@ where
             Some(settings),
             |x| {
                 // L2||x_i - x||
-                let distance: T = Scalar::powi(T::from_real(x_i.sub(&x).norm()), 2);
+                let diff = x_i.sub(&x);
+                let distance: T = diff.dot(&diff);
                 let two = T::one() + T::one();
                 // e^{-\frac{distance^2}{2*\tau^2}}
-                num::Float::powf(
-                    T::E(),
-                    (distance / two * Scalar::powi(self.settings.bandwith, 2)).neg(),
-                )
+                T::E().powf(distance / two * self.settings.bandwith.powi(2).neg())
             },
         )?;
         let result = x_i.dot(&lms_result.theta);

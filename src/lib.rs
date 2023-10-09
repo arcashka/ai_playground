@@ -7,6 +7,10 @@ mod normal_equation;
 mod parametric_algorithm;
 mod training_data;
 
+mod array;
+
+mod linalg;
+
 mod window;
 
 use fittable_model::FittableModel;
@@ -34,11 +38,13 @@ impl From<TrainingDataError> for MainError {
     }
 }
 
-fn print<T: num_traits::Float + std::fmt::Debug>(
+fn print<T>(
     name: &str,
-    theta: ndarray::ArrayView1<T>,
+    theta: array::ArrayView1<T>,
     fitting_info: Option<fittable_model::FittingInfo>,
-) {
+) where
+    T: num_traits::Float + std::fmt::Debug,
+{
     println!("{}", name);
     match fitting_info {
         Some(info) => {
@@ -55,7 +61,7 @@ pub fn run() -> Result<(), MainError> {
         max_iteration_count: 10000,
         learning_rate: 0.001,
         eps: 0.00001,
-        starting_theta: ndarray::Array1::<f64>::zeros(training_data.x.ncols()),
+        starting_theta: array::Array1::<f64>::zeros(training_data.x.ncols()),
     };
     let batch_gradient_descent = gradient_descent::GradientDescent::<f64>::fit::<lms::BatchKernel>(
         &training_data,
