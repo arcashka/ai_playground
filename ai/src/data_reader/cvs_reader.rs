@@ -1,18 +1,30 @@
 use csv::Reader;
 use std::fs::File;
 
-use crate::array;
+use linalg::ndarray::NDArray1;
+use linalg::ndarray::NDArray2;
+use linalg::LinalgError;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TrainingData<T> {
-    pub x: array::Array2<T>,
-    pub y: array::Array1<T>,
+    pub x: NDArray2<T>,
+    pub y: NDArray1<T>,
 }
 
 #[derive(Debug)]
 pub enum TrainingDataError {
     CantOpenFileError,
     InvalidFileFormatError,
+    OutOfMemory,
+}
+
+impl From<LinalgError> for TrainingDataError {
+    fn from(error: LinalgError) -> Self {
+        match error {
+            LinalgError::AllocationError => Self::OutOfMemory,
+            LinalgError::DimensionMismatch => Self::InvalidFileFormatError,
+        }
+    }
 }
 
 pub fn read_data<T>(file: &str) -> Result<TrainingData<T>, TrainingDataError>
@@ -25,7 +37,8 @@ where
     let mut reader = Reader::from_reader(file);
 
     let mut y_values: Vec<T> = Vec::new();
-    let mut x: Option<array::Array2<T>> = None;
+    let mut x: Vec<T> = Vec::new();
+    let mut row_len: Option<usize> = None;
 
     for record in reader.records() {
         let record = record.map_err(|_| TrainingDataError::InvalidFileFormatError)?;
@@ -39,21 +52,19 @@ where
             .collect();
         let mut row = row?;
         let y = row.pop().ok_or(TrainingDataError::InvalidFileFormatError)?;
-        match x.as_mut() {
-            Some(x) => x
-                .push_row(array::Array1::from_vec(row).view())
-                .map_err(|_| TrainingDataError::InvalidFileFormatError)?,
-            None => {
-                x = Some(
-                    array::Array2::from_shape_vec((1, row.len()), row)
-                        .map_err(|_| TrainingDataError::InvalidFileFormatError)?,
-                )
-            }
-        };
+        if row_len.is_some() {
+            assert_eq!(row_len.unwrap(), row.len());
+        } else {
+            row_len = Some(row.len());
+        }
+        x.append(&mut row);
         y_values.push(y);
     }
+
+    let y_len = y_values.len();
+    let row_len = row_len.ok_or(TrainingDataError::InvalidFileFormatError)?;
     Ok(TrainingData {
-        x: x.unwrap(),
-        y: array::Array1::from_vec(y_values),
+        x: NDArray2::from_vec(x, [row_len, y_len])?,
+        y: NDArray1::from_vec(y_values, [y_len])?,
     })
 }

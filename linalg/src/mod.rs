@@ -1,5 +1,5 @@
 pub mod arithmetic;
-pub mod array_base;
+pub mod array;
 pub mod cholesky;
 pub mod dot;
 pub mod error;

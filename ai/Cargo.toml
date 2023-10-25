@@ -1,0 +1,12 @@
+[package]
+name = "ai"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+csv = "1.2"
+num-traits = "*"
+linalg = { path = "../linalg" }
