@@ -1,12 +1,7 @@
-use crate::array::ndarray::*;
-use crate::Array;
-use crate::LinalgError;
+use super::{MemoryLayout, NDStorage};
+use crate::{Array, LinalgError};
 
 use std::fmt;
-
-pub type NDArray<A, const N: usize> = Array<ndstorage::NDStorage<A, ndstorage::RowMajor, N>>;
-pub type NDArray1<A> = Array<ndstorage::NDStorage<A, ndstorage::RowMajor, 1>>;
-pub type NDArray2<A> = Array<ndstorage::NDStorage<A, ndstorage::RowMajor, 2>>;
 
 impl<A, L, const N: usize> Array<NDStorage<A, L, N>>
 where
@@ -38,15 +33,6 @@ where
     }
 }
 
-impl<A> Array<NDStorage<A, RowMajor, 2>>
-where
-    A: Copy,
-{
-    pub fn push_row(&mut self, row: Vec<A>) -> Result<(), LinalgError> {
-        self.storage.push_row(row)
-    }
-}
-
 impl<A: fmt::Debug, L: MemoryLayout, const N: usize> fmt::Debug for Array<NDStorage<A, L, N>> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("NDArray:\n{:?}", &self.storage))
@@ -55,8 +41,8 @@ impl<A: fmt::Debug, L: MemoryLayout, const N: usize> fmt::Debug for Array<NDStor
 
 #[cfg(test)]
 mod tests {
-    use super::ndstorage::*;
-    use super::*;
+    use crate::ndarray::{ColumnMajor, NDStorage, RowMajor};
+    use crate::Array;
 
     #[test]
     fn create_zeros_array() {

@@ -1,33 +1,34 @@
-use crate::array;
-use crate::linalg::arithmetic::Arithmetic;
-use crate::linalg::dot::Dot;
-use crate::lms::kernel::*;
+use super::{Error, Kernel, Solver};
+use crate::ndarray::{NDArray1, NDArray2};
 
-pub struct BatchKernel;
-
-impl<T> Kernel<T> for BatchKernel
-where
-    T: num_traits::Float + num_traits::NumAssignOps + std::iter::Sum,
-{
-    fn compute<F>(
-        x: array::ArrayView2<T>,
-        y: array::ArrayView1<T>,
-        settings: LMSSettingsFilled<T>,
-        weight_function: F,
-    ) -> Result<LMSResult<T>, LMSError>
+impl<A, K: Kernel> Solver<A, K> {
+    pub fn solve<F>(
+        &self,
+        x: NDArray2<A>,
+        y: NDArray1<A>,
+        starting_theta: Option<NDArray1<A>>,
+        weight_function: Option<F>,
+    ) -> Result<NDArray1<A>, Error>
     where
-        F: Fn(array::ArrayView1<T>) -> T,
+        F: Fn(&NDArray1<A>) -> A,
+        A: num_traits::Zero + num_traits::One,
     {
         let m = x.nrows();
         let n = x.ncols();
+
         let mut iteration_count = 0;
-        let mut previous_cost = T::zero();
-        let mut theta = settings.starting_theta.clone();
+        let mut previous_cost = A::zero();
+        let mut theta = starting_theta.unwrap_or(NDArray1::<A>::zeros([n]));
+
         loop {
-            let mut gradients = array::Array1::<T>::zeros(n);
-            let mut cost = T::zero();
+            let mut gradients = NDArray1::<A>::zeros([n]);
+            let mut cost = A::zero();
             for i in 0..m {
-                let weight = weight_function(x.row(i));
+                let weight = if let Some(weight_func) = &weight_function {
+                    weight_func(&x.row(i))
+                } else {
+                    A::one() // Assuming A also implements num_traits::One
+                };
                 let error = weight * x.row(i).dot(&theta) - y[i];
                 cost += error * error;
                 gradients = gradients.scaled_add(error, &x.row(i));
